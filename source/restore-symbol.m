@@ -49,19 +49,18 @@ void restore_symbol(NSString * inpath, NSString *outpath, NSString *jsonPath, bo
     }
     
     
-    
     if ([outpath length] == 0) {
         fprintf(stderr, "Error: No output file path!\n");
         exit(1);
     }
     
+    if ([[NSFileManager defaultManager] fileExistsAtPath:outpath]) {
+        fprintf(stderr, "Error: Output file has exist!\n");
+        exit(1);
+    }
     
     fprintf(stderr, "=========== Start =============\n");
     
-    
-    
-    
-    [[NSFileManager defaultManager] removeItemAtPath:outpath error:nil];
     
     NSMutableData * outData = [[NSMutableData alloc] initWithContentsOfFile:inpath];
     
@@ -178,13 +177,14 @@ void restore_symbol(NSString * inpath, NSString *outpath, NSString *jsonPath, bo
             }
         }
         
-        struct linkedit_data_command *command = (struct linkedit_data_command *)((char *)outData.mutableBytes + codesignature.commandOffset);
-        uint32_t tmp_offset =  command -> dataoff + increase_size_all_without_padding;
-        uint32_t final_offset = vm_addr_round(tmp_offset, 16);
-        
-        string_table_padding = final_offset - tmp_offset;
-        command -> dataoff = final_offset;
-        
+        if (codesignature) {
+            struct linkedit_data_command *command = (struct linkedit_data_command *)((char *)outData.mutableBytes + codesignature.commandOffset);
+            uint32_t tmp_offset =  command -> dataoff + increase_size_all_without_padding;
+            uint32_t final_offset = vm_addr_round(tmp_offset, 16);
+            
+            string_table_padding = final_offset - tmp_offset;
+            command -> dataoff = final_offset;
+        }
     }
     
     
